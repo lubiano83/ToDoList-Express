@@ -91,7 +91,7 @@ export default class UserController {
             const newImagePath = `/profile/${filename}`;
             const updateData = { first_name, last_name, image: newImagePath };
             const user = await userDao.getUserById( id );
-            if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+            if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
             if (user.image) {
                 const oldImagePath = path.join(process.cwd(), "src/public", user.image);
                 if (fs.existsSync(oldImagePath)) {
@@ -121,5 +121,22 @@ export default class UserController {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
         }
     };
-    
+
+    deleteUserById = async(req, res) => {
+        try {
+            const { id } = req.params;
+            const user = await userDao.getUserById(id);
+            if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
+            if(user.image) {
+                const imagePath = path.join(process.cwd(), "src/public", user.image);
+                if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                }
+            }
+            await userDao.deleteUserById(id);
+            return res.status(200).json({ message: "Usuario eliminado con éxito" });
+        } catch (error) {
+            return res.status(500).json({ message: "Error al eliminar un usuario", error: error.message });
+        }
+    };
 };

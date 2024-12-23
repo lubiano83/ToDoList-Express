@@ -12,6 +12,7 @@ ROUTER.post("/login", userController.loginUser);
 ROUTER.get("/:id", userController.getUserById);
 ROUTER.patch("/:id", uploadProfile.single("image"), userController.updateUserById);
 ROUTER.put("/:id", userController.updateRoleById);
+ROUTER.delete("/:id", userController.deleteUserById);
 ROUTER.get("/email/:email", userController.getUserByEmail);
 
 export default ROUTER;
