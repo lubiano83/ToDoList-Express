@@ -1,48 +1,49 @@
-import SessionModel from "./session.dao.js"
+import SessionModel from "./models/session.model.js";
 import { isValidId, connectDB } from "../config/mongoose.config.js";
 
 export default class SessionDao {
-
     constructor() {
-        connectDB(); // Intentamos conectar a la base de datos
+        connectDB(); // Conecta a la base de datos
     }
 
     getSessions = async () => {
         try {
             return await SessionModel.find();
-        } catch (error) {
-            throw new Error( "Error al obtener las sessions " + error.message );
+        } catch ( error ) {
+            throw new Error( "Error al obtener las sesiones: " + error.message );
         }
     };
-    
-    createSession = async ( id, token ) => {
+
+    createSession = async ( userId, token ) => {
         try {
-            if (!isValidId(id)) throw new Error("ID no válido");
-            const session = await SessionModel( id, token );
+            if ( !isValidId( userId )) throw new Error( "ID no válido" );
+            if ( !token ) throw new Error( "El token es requerido" );
+            const session = new SessionModel({ userId, token });
             await session.save();
             return session;
-        } catch (error) {
-            throw new Error( "Error al crear una session " + error.message );
+        } catch ( error ) {
+            throw new Error( "Error al crear una sesión: " + error.message );
         }
     };
 
     deleteSession = async ( token ) => {
         try {
+            if ( !token ) throw new Error( "El token es requerido" );
             const session = await SessionModel.findOneAndDelete({ token });
-            if (!session) throw new Error ("Session no encontrada");
-        } catch (error) {
-            throw new Error( "Error al cerrar una session " + error.message );
+            if ( !session ) throw new Error("Sesión no encontrada");
+        } catch ( error ) {
+            throw new Error( "Error al cerrar una sesión: " + error.message );
         }
     };
 
-    getUserToken = async( token ) => {
+    getUserToken = async ( token ) => {
         try {
+            if ( !token ) throw new Error( "El token es requerido" );
             const user = await SessionModel.findOne({ token });
-            if(!user) throw new Error ("Usuario no encontrado");
-            const userToken = user.token
-            return userToken;
-        } catch (error) {
-            throw new Error( "Error al obtener un token " + error.message );
+            if ( !user ) throw new Error( "Usuario no encontrado" );
+            return user;
+        } catch ( error ) {
+            throw new Error( "Error al obtener un token: " + error.message );
         }
     };
 }

@@ -33,7 +33,7 @@ const todoSchema = new mongoose.Schema({
     },
     createdAt: {
         type: String,
-        default: () => moment().format("DD/MM/YYYY")
+        default: moment().format("DD/MM/YYYY")
     },
     dueDate: {
         type: String

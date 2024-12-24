@@ -2,7 +2,7 @@ import { Router } from "express";
 import UserController from "../controllers/user.controller.js";
 import { uploadProfile } from "../utils/uploader.js";
 import passport from "passport";
-import { justSlave, justBoss, justChief } from "../middlewares/auth.middleware.js";
+import { justSlave, justBoss, justChief, justDev } from "../middlewares/auth.middleware.js";
 
 const ROUTER = Router();
 const userController = new UserController();

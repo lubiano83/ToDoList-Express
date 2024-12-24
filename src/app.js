@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import todoRouter from "./routes/todo.router.js";
 import userRouter from "./routes/user.router.js";
+import sessionRouter from "./routes/session.router.js";
 import cookieParser from "cookie-parser";
 import passport from "passport";
 import initializePassport from "./config/passport.config.js";
@@ -28,6 +29,7 @@ APP.use(cors({
 // Rutas
 APP.use("/api/todos", todoRouter);
 APP.use("/api/users", userRouter);
+APP.use("/api/auth", sessionRouter);
 
 // Método que gestiona las rutas inexistentes.
 APP.use("*", (req, res) => {

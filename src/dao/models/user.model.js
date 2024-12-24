@@ -3,7 +3,7 @@ import moment from "moment";
 
 const collection = "users";
 
-const usersSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     image: {
         type: String,
         default: "../../public/profile-round-1342-svgrepo-com.svg"
@@ -45,11 +45,11 @@ const usersSchema = new mongoose.Schema({
     },
     createdAt: {
         type: String,
-        default: () => moment().format("DD/MM/YYYY")
+        default: moment().format("DD/MM/YYYY")
     },
     updatedAt: {
         type: String,
-        default: () => moment().format("DD/MM/YYYY")
+        default: moment().format("DD/MM/YYYY")
     },
     score: {
         type: Number,
@@ -58,16 +58,16 @@ const usersSchema = new mongoose.Schema({
 });
 
 // Hook pre-save para formatear `updatedAt` antes de guardar
-usersSchema.pre("save", function (next) {
+userSchema.pre("save", function (next) {
     this.updatedAt = moment().format("DD/MM/YYYY");
     next();
 });
 
 // Hook pre-update para formatear `updatedAt` antes de una actualización
-usersSchema.pre("findOneAndUpdate", function (next) {
+userSchema.pre("findOneAndUpdate", function (next) {
     this._update.updatedAt = moment().format("DD/MM/YYYY");
     next();
 });
 
-const UserModel = mongoose.models[collection] || mongoose.model(collection, usersSchema);
+const UserModel = mongoose.models[collection] || mongoose.model(collection, userSchema);
 export default UserModel;

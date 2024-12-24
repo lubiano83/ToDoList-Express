@@ -1,7 +1,7 @@
 import { Router } from "express";
 import TodoController from "../controllers/todo.controller.js";
 import passport from "passport";
-import { justSlave, justBoss, justChief } from "../middlewares/auth.middleware.js";
+import { justSlave, justBoss, justChief, justDev } from "../middlewares/auth.middleware.js";
 
 const ROUTER = Router();
 const todoController = new TodoController();
