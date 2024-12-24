@@ -1,8 +1,11 @@
 import { Router } from "express";
 import TodoController from "../controllers/todo.controller.js";
+import passport from "passport";
+import { justSlave, justBoss, justChief } from "../middlewares/auth.middleware.js";
 
-const todoController = new TodoController();
 const ROUTER = Router();
+const todoController = new TodoController();
+const permissions = passport.authenticate("current", { session: false });
 
 ROUTER.get("/", todoController.getTodos);
 ROUTER.post("/", todoController.createTodo);

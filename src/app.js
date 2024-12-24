@@ -3,6 +3,8 @@ import cors from "cors";
 import todoRouter from "./routes/todo.router.js";
 import userRouter from "./routes/user.router.js";
 import cookieParser from "cookie-parser";
+import passport from "passport";
+import initializePassport from "./config/passport.config.js";
 
 // Variables
 const APP = express();
@@ -13,6 +15,8 @@ const HOST = "localhost";
 APP.use(express.json());
 APP.use(express.urlencoded({ extended: true }));
 APP.use(cookieParser());
+APP.use(passport.initialize());
+initializePassport();
 
 // Configuración de CORS
 APP.use(cors({

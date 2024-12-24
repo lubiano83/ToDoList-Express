@@ -1,10 +1,12 @@
-import UserDao from "../dao/user.dao.js"
+import UserDao from "../dao/user.dao.js";
+import SessionDao from "../dao/session.dao.js";
 import { createHash, isValidPassword } from "../utils/bcrypt.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 
 const userDao = new UserDao();
+const sessionDao = new SessionDao();
 
 export default class UserController {
 
@@ -58,12 +60,14 @@ export default class UserController {
             const { email, password } = req.body;
             if( !email || !password ) return res.status(400).send({ message: "Todos los campos son obligatorios" });
             const user = await userDao.getUserByEmail({ email });
-            // if( !user ) return res.status(409).send({ message: "Ese email no esta registrado" });
+            console.log(user);
+            if( !user ) return res.status(409).send({ message: "Ese email no esta registrado" });
             const passwordMatch = await isValidPassword(user, password);
             if (!passwordMatch) return res.status(401).json({ status: 401, message: "La contraseña es incorrecta" });
             const userLogged = req.cookies[process.env.COOKIE_NAME];
             if (userLogged) return res.status(200).send({ message: "Ese usuario ya está logeado" });
             const token = jwt.sign({ email: user.email, first_name: user.first_name, last_name: user.last_name, category: user.category, role: user.role, id: user._id.toString() }, process.env.COOKIE_KEY, { expiresIn: "1h" });
+            await sessionDao.createSession( user._id, token );
             res.cookie(process.env.COOKIE_NAME, token, { maxAge: 3600000, httpOnly: true, secure: true, sameSite: "strict", path: "/" });
             return res.status(200).json({ message: "Login realizado con éxito", token });
         } catch (error) {
