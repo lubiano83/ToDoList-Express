@@ -26,6 +26,16 @@ export default class SessionDao {
         }
     };
 
+    getSessionByUserId = async( userId ) => {
+        try {
+            if ( !isValidId( userId )) throw new Error( "ID no válido" );
+            const session = await SessionModel.findOne({ userId });
+            return session;
+        } catch (error) {
+            throw new Error( "Error al obtener la sesión por el userId: " + error.message );
+        }
+    }
+
     deleteSession = async ( token ) => {
         try {
             if ( !token ) throw new Error( "El token es requerido" );

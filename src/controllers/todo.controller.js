@@ -7,7 +7,8 @@ export default class TdoController {
 
     getTodos = async( req, res ) => {
         try {
-            const todos = await todoDao.getTodos();
+            const paramFilters = req.query;
+            const todos = await todoDao.getTodos( paramFilters );
             return res.status( 200 ).send({ message: "Todos las tareas", payload: todos });
         } catch ( error ) {
             res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
@@ -25,25 +26,15 @@ export default class TdoController {
         }
     };
 
-    getTodoByCategory = async( req, res ) => {
-        try {
-            const { category } = req.params;
-            const todos = await todoDao.getTodoByProperty({ category });
-            if( !todos ) return res.status( 404 ).send({ message: "Esa tarea no existe" });
-            return res.status( 200 ).send({ message: "Las tareas por la categoria", payload: todos });
-        } catch ( error ) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
-        }
-    };
-
     createTodo = async (req, res) => {
         try {
             const { title, category, dueDate } = req.body;
-            if ( !title || !category || !dueDate ) return res.status(400).send({ message: "El título y la categoría son obligatorios." });
+            if ( !title || !category || !dueDate ) return res.status(400).send({ message: "Todos los campos son obligatorios" });
             const todo = await todoDao.getTodoByProperty({ title, category });
             if ( todo.length > 0 ) return res.status(409).send({ message: "Ese título y categoría ya existen." });
-            const payload = await todoDao.createTodo({ title, category, dueDate: moment().format("DD/MM/YYYY") });
-            return res.status( 201 ).send({ message: "Tarea cread exitosamente.", payload });
+            const formattedDueDate = moment(dueDate, "DD/MM/YYYY").format("DD/MM/YYYY");
+            const payload = await todoDao.createTodo({ title, category, dueDate: formattedDueDate });
+            return res.status( 201 ).send({ message: "Tarea creada exitosamente.", payload });
         } catch (error) {
             return res.status( 500 ).send({ message: "Error al procesar la solicitud.", error: error.message });
         }

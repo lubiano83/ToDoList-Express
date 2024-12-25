@@ -7,9 +7,25 @@ export default class UserDao {
         connectDB(); // Intentamos conectar a la base de datos
     }
 
-    getUsers = async() => {
+    getUsers = async( paramFilters = {} ) => {
         try {
-            return await UserModel.find();
+            const $and = [];
+            if (paramFilters.category) $and.push({ category: paramFilters.category });
+            if (paramFilters.role) $and.push({ role: paramFilters.role });
+            if (paramFilters.email) $and.push({ email: paramFilters.email });
+            const filters = $and.length > 0 ? { $and } : {};
+            let sort = {};
+            if (paramFilters.sort && paramFilters.sort === "asc") {
+                sort.updatedAt = 1;
+            } else if (paramFilters.sort && paramFilters.sort === "desc") {
+                sort.updatedAt = -1;
+            }
+            const limit = paramFilters.limit ? parseInt(paramFilters.limit) : 10;
+            const page = paramFilters.page ? parseInt(paramFilters.page) : 1;
+            const usersFound = await UserModel.paginate( filters, { limit: limit, page: page, sort: sort, lean: true, pagination: true });
+            let finalUsers = usersFound.docs;
+            finalUsers = finalUsers.map(({ id, ...usersWithoutId }) => usersWithoutId);
+            return { ...usersFound, docs: finalUsers };
         } catch (error) {
             throw new Error("Hubo un error al obtener los usuarios.." + error.message );
         }
@@ -24,9 +40,9 @@ export default class UserDao {
         }
     }
 
-    getUserByEmail = async( doc ) => {
+    getUserByProperty = async( doc ) => {
         try {
-            return await UserModel.findOne( doc );
+            return await UserModel.find( doc );
         } catch (error) {
             throw new Error( "Error al obtener el usuario por el email: " + error.message );
         }

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import moment from "moment";
+import paginate from "mongoose-paginate-v2";
 
 const collection = "users";
 
@@ -68,6 +69,8 @@ userSchema.pre("findOneAndUpdate", function (next) {
     this._update.updatedAt = moment().format("DD/MM/YYYY");
     next();
 });
+
+userSchema.plugin(paginate);
 
 const UserModel = mongoose.models[collection] || mongoose.model(collection, userSchema);
 export default UserModel;

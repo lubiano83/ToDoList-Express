@@ -7,11 +7,27 @@ export default class TodoDao {
         connectDB(); // Intentamos conectar a la base de datos
     }
 
-    getTodos = async( filter = {} ) => {
+    getTodos = async ( paramFilters = {} ) => {
         try {
-            return await TodoModel.find( filter );
+            const $and = [];
+            if (paramFilters.category) $and.push({ category: paramFilters.category });
+            if (paramFilters.priority) $and.push({ priority: paramFilters.priority });
+            if (paramFilters.completed) $and.push({ completed: paramFilters.completed });
+            const filters = $and.length > 0 ? { $and } : {};
+            let sort = {};
+            if (paramFilters.sort && paramFilters.sort === "asc") {
+                sort.dueDate = 1;
+            } else if (paramFilters.sort && paramFilters.sort === "desc") {
+                sort.dueDate = -1;
+            }
+            const limit = paramFilters.limit ? parseInt(paramFilters.limit) : 10;
+            const page = paramFilters.page ? parseInt(paramFilters.page) : 1;
+            const todosFound = await TodoModel.paginate( filters, { limit: limit, page: page, sort: sort, lean: true, pagination: true });
+            let finalTodos = todosFound.docs;
+            finalTodos = finalTodos.map(({ id, ...todosWithoutId }) => todosWithoutId);
+            return { ...todosFound, docs: finalTodos };
         } catch (error) {
-            throw new Error("Hubo un error al obtener los todos.." + error.message );
+            throw new Error("Hubo un error al obtener los todos: " + error.message);
         }
     };
 

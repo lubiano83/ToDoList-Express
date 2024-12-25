@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import moment from "moment";
+import paginate from "mongoose-paginate-v2";
 
 const collection = "todos";
 
@@ -31,14 +32,15 @@ const todoSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    dueDate: {
+        type: String
+    },
     createdAt: {
         type: String,
         default: moment().format("DD/MM/YYYY")
-    },
-    dueDate: {
-        type: String
     }
 });
+
 
 todoSchema.pre("save", function (next) {
     if (this.dueDate) {
@@ -46,6 +48,8 @@ todoSchema.pre("save", function (next) {
     }
     next();
 });
+
+todoSchema.plugin(paginate);
 
 const TodoModel = mongoose.models[collection] || mongoose.model(collection, todoSchema);
 export default TodoModel;

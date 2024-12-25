@@ -4,6 +4,7 @@ import { createHash, isValidPassword } from "../utils/bcrypt.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 
 const userDao = new UserDao();
 const sessionDao = new SessionDao();
@@ -12,7 +13,8 @@ export default class UserController {
 
     getUsers = async( req, res ) => {
         try {
-            const users = await userDao.getUsers();
+            const paramFilters = req.query;
+            const users = await userDao.getUsers( paramFilters );
             return res.status( 200 ).send({ message: "Todos los usuarios", payload: users });
         } catch (error) {
             res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
@@ -30,24 +32,13 @@ export default class UserController {
         }
     };
 
-    getUserByEmail = async( req, res ) => {
-        try {
-            const { email } = req.params;
-            const user = await userDao.getUserByEmail({ email });
-            if( !user ) return res.status( 404 ).send({ message: "Ese usuario no existe" });
-            return res.status( 200 ).send({ message: "Un usuario por el email", payload: user });
-        } catch (error) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
-        }
-    };
-
     registerUser = async( req, res ) => {
         try {
             const { first_name, last_name, email, password } = req.body;
             if( !first_name || !last_name || !email || !password ) return res.status( 400 ).send({ message: "Todos los campos son obligatorios" });
-            const user = await userDao.getUserByEmail({ email });
-            if( user ) return res.status( 409 ).send({ message: "Ese email ya esta registrado" });
-            if( password.lenght < 6 || password.lenght > 8 ) return res.status().send({ message: "La contraseña debe ser entre 6 a 8 caracteres" });
+            const user = await userDao.getUserByProperty({ email });
+            if( user.length > 0 ) return res.status( 409 ).send({ message: "Ese email ya esta registrado" });
+            if( password.length < 6 || password.length > 8 ) return res.status().send({ message: "La contraseña debe ser entre 6 a 8 caracteres" });
             const payload = await userDao.createUser({ first_name, last_name, email, password: await createHash(password) });
             return res.status( 200 ).send({ message: "Usuario registrado exitosamente", payload });
         } catch (error) {
@@ -59,15 +50,15 @@ export default class UserController {
         try {
             const { email, password } = req.body;
             if( !email || !password ) return res.status( 400 ).send({ message: "Todos los campos son obligatorios" });
-            const user = await userDao.getUserByEmail({ email });
-            if( !user ) return res.status( 409 ).send({ message: "Ese email no esta registrado" });
-            const passwordMatch = await isValidPassword( user, password );
+            const users = await userDao.getUserByProperty({ email });
+            if( users.length === 0 ) return res.status( 409 ).send({ message: "Ese email no esta registrado" });
+            const passwordMatch = await isValidPassword(users[0], password);
             if ( !passwordMatch ) return res.status( 401 ).json({ status: 401, message: "La contraseña es incorrecta" });
             const userLogged = req.cookies[ process.env.COOKIE_NAME ];
             if ( userLogged ) return res.status( 200 ).send({ message: "Ese usuario ya está logeado" });
-            const token = jwt.sign({ email: user.email, first_name: user.first_name, last_name: user.last_name, category: user.category, role: user.role, id: user._id.toString() }, process.env.COOKIE_KEY, { expiresIn: "1h" });
+            const token = jwt.sign({ email: users[0].email, first_name: users[0].first_name, last_name: users[0].last_name, category: users[0].category, role: users[0].role, id: users[0]._id.toString() }, process.env.COOKIE_KEY, { expiresIn: "1h" });
             res.cookie( process.env.COOKIE_NAME, token, { maxAge: 3600000, httpOnly: true, secure: true, sameSite: "strict", path: "/" });
-            await sessionDao.createSession( user._id, token );
+            await sessionDao.createSession( users[0]._id, token );
             return res.status( 200 ).json({ message: "Login realizado con éxito", token });
         } catch ( error ) {
             res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
@@ -86,29 +77,38 @@ export default class UserController {
         }
     };
 
-    updateUserById = async( req, res ) => {
+    updateUserById = async (req, res) => {
         try {
             const { first_name, last_name } = req.body;
             const { id } = req.params;
             const { filename } = req.file;
-            if ( !filename ) return res.status( 400 ).json({ message: "No se subió ninguna imagen" });
-            const newImagePath = `/profile/${ filename }`;
+            if (!filename) return res.status(400).json({ message: "No se subió ninguna imagen" });
+            const originalImagePath = path.join(process.cwd(), "src/public/profile", filename);
+            const isWebp = path.extname(filename).toLowerCase() === ".webp";
+            let webpFileName = filename;
+            let webpImagePath = originalImagePath;
+            if (!isWebp) {
+                webpFileName = `${path.parse(filename).name}.webp`;
+                webpImagePath = path.join(process.cwd(), "src/public/profile", webpFileName);
+                await sharp(originalImagePath).webp({ quality: 80 }).toFile(webpImagePath);
+                fs.unlinkSync(originalImagePath);
+            }
+            const newImagePath = `/profile/${webpFileName}`;
             const updateData = { first_name, last_name, image: newImagePath };
-            const user = await userDao.getUserById( id );
-            if ( !user ) return res.status( 404 ).json({ message: "Ese usuario no existe" });
-            if ( user.image ) {
-                const oldImagePath = path.join( process.cwd(), "src/public", user.image );
-                if (fs.existsSync( oldImagePath )) {
-                    fs.unlinkSync( oldImagePath );
-                    console.log( "Imagen anterior eliminada correctamente." );
+            const user = await userDao.getUserById(id);
+            if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
+            if (user.image) {
+                const oldImagePath = path.join(process.cwd(), "src/public", user.image);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
                 } else {
-                    console.log( "La imagen anterior no existe:", oldImagePath );
+                    console.log("La imagen anterior no existe:", oldImagePath);
                 }
             }
-            const payload = await userDao.updateUserById( id, updateData );
-            return res.status( 200 ).json({ message: "Usuario actualizado con éxito", payload });
-        } catch ( error ) {
-            res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
+            const payload = await userDao.updateUserById(id, updateData);
+            return res.status(200).json({ message: "Usuario actualizado con éxito", payload });
+        } catch (error) {
+            return res.status(500).json({ message: "Error interno del servidor", error: error.message });
         }
     };
 
