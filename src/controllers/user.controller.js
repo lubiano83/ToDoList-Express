@@ -112,20 +112,6 @@ export default class UserController {
         }
     };
 
-    updateRoleById = async ( req, res ) => {
-        try {
-            const { id } = req.params;
-            let { role } = req.body;
-            if ( Array.isArray(role )) role = role[0];
-            const validRoles = ["slave", "boss", "chief"];
-            if ( !role || typeof role !== "string" || !validRoles.includes( role )) return res.status( 400 ).json({ message: `El campo 'role' debe ser uno de los siguientes valores: ${validRoles.join( ", " )}` });
-            const payload = await userDao.updateUserById( id, { role });
-            return res.status( 200 ).json({ message: "Role actualizado con éxito", payload });
-        } catch ( error ) {
-            res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
-        }
-    };
-
     deleteUserById = async(req, res) => {
         try {
             const { id } = req.params;
@@ -143,7 +129,7 @@ export default class UserController {
             res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
         }
     };
-
+    
     usersLogged = async( req, res ) => {
         try {
             const users = await sessionDao.getSessions();
@@ -153,7 +139,7 @@ export default class UserController {
             res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
         }
     };
-
+    
     usersRegistered = async( req, res ) => {
         try {
             const users = await userDao.getUsers();
@@ -163,7 +149,7 @@ export default class UserController {
             res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
         }
     };
-
+    
     getUserFromSession = async ( req, res ) => {
         try {
             const token = req.cookies[process.env.COOKIE_NAME];
@@ -171,6 +157,31 @@ export default class UserController {
             const session = await sessionDao.getUserToken( token );
             if ( !session ) return res.status( 404 ).json({ message: "Sesión no encontrada" });
             return res.status( 200 ).json({ message: "Usuario obtenido desde la sesión", payload: session });
+        } catch ( error ) {
+            res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
+        }
+    };
+    
+    updateRoleById = async ( req, res ) => {
+        try {
+            const { id } = req.params;
+            let { role } = req.body;
+            if ( Array.isArray(role )) role = role[0];
+            const validRoles = ["slave", "boss", "chief"];
+            if ( !role || typeof role !== "string" || !validRoles.includes( role )) return res.status( 400 ).json({ message: `El campo 'role' debe ser uno de los siguientes valores: ${validRoles.join( ", " )}` });
+            const payload = await userDao.updateUserById( id, { role });
+            return res.status( 200 ).json({ message: "Role actualizado con éxito", payload });
+        } catch ( error ) {
+            res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
+        }
+    };
+
+    updateCategoryById = async ( req, res ) => {
+        try {
+            const { id } = req.params;
+            let { category } = req.body;
+            const payload = await userDao.updateUserById( id, { category });
+            return res.status( 200 ).json({ message: "Categoria actualizada con éxito", payload });
         } catch ( error ) {
             res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
         }

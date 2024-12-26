@@ -38,7 +38,11 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: [ "slave", "boss", "chief" ],
-        default: "slave"
+        default: "chief"
+    },
+    team: {
+        type: Array,
+        default: []
     },
     todos: {
         type: Array,

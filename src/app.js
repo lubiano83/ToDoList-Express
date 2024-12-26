@@ -21,7 +21,7 @@ initializePassport();
 
 // Configuración de CORS
 APP.use(cors({
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'http://localhost:8081', 'http://192.168.20.61:8081'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
     credentials: true
 }));

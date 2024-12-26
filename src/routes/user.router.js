@@ -14,7 +14,8 @@ ROUTER.post("/register", userController.registerUser);
 ROUTER.post("/login", userController.loginUser);
 ROUTER.get("/:id", userController.getUserById);
 ROUTER.patch("/:id", uploadProfile.single("image"), userController.updateUserById);
-ROUTER.put("/:id", userController.updateRoleById);
 ROUTER.delete("/:id", userController.deleteUserById);
+ROUTER.put("/role/:id", userController.updateRoleById);
+ROUTER.put("/category/:id", userController.updateCategoryById);
 
 export default ROUTER;
