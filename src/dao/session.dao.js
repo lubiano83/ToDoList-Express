@@ -39,8 +39,9 @@ export default class SessionDao {
     deleteSession = async ( token ) => {
         try {
             if ( !token ) throw new Error( "El token es requerido" );
+            console.log("Token recibido para eliminar:", token); // Depuración
             const session = await SessionModel.findOneAndDelete({ token });
-            if ( !session ) throw new Error("Sesión no encontrada");
+            if ( !session ) throw new Error( "Sesión no encontrada" );
         } catch ( error ) {
             throw new Error( "Error al cerrar una sesión: " + error.message );
         }

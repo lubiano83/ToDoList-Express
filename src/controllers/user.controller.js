@@ -15,20 +15,20 @@ export default class UserController {
         try {
             const paramFilters = req.query;
             const users = await userDao.getUsers( paramFilters );
-            return res.status( 200 ).send({ message: "Todos los usuarios", payload: users });
+            return res.status( 200 ).json({ message: "Todos los usuarios", payload: users });
         } catch (error) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
+            res.status( 500 ).json({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
     };
 
     getUserById = async( req, res ) => {
         try {
-            const { id } = req.params;
+            const { id } = req.user;
             const user = await userDao.getUserById( id );
             if( !user ) return res.status( 404 ).send({ message: "Ese usuario no existe" });
-            return await res.status( 200 ).send({ message: "Un usuario por el id", payload: user });
+            return await res.status( 200 ).json({ message: "Un usuario por el id", payload: user });
         } catch ( error ) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
+            res.status( 500 ).json({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
     };
 
@@ -39,10 +39,10 @@ export default class UserController {
             const user = await userDao.getUserByProperty({ email });
             if( user.length > 0 ) return res.status( 409 ).send({ message: "Ese email ya esta registrado" });
             if( password.length < 6 || password.length > 8 ) return res.status().send({ message: "La contraseña debe ser entre 6 a 8 caracteres" });
-            const payload = await userDao.createUser({ first_name, last_name, email, password: await createHash(password) });
-            return res.status( 200 ).send({ message: "Usuario registrado exitosamente", payload });
+            const payload = await userDao.createUser({ first_name: first_name.toLowerCase(), last_name: last_name.toLowerCase(), email: email.toLowerCase(), password: await createHash(password) });
+            return res.status( 200 ).json({ message: "Usuario registrado exitosamente", payload });
         } catch (error) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
+            res.status( 500 ).json({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
     };
 
@@ -50,32 +50,33 @@ export default class UserController {
         try {
             const { email, password } = req.body;
             if( !email || !password ) return res.status( 400 ).send({ message: "Todos los campos son obligatorios" });
-            const users = await userDao.getUserByProperty({ email });
-            if( users.length === 0 ) return res.status( 409 ).send({ message: "Ese email no esta registrado" });
+            const users = await userDao.getUserByProperty({ email: email.toLowerCase() });
+            if( users.length === 0 ) return res.status( 409 ).json({ message: "Ese email no esta registrado" });
             const passwordMatch = await isValidPassword(users[0], password);
             if ( !passwordMatch ) return res.status( 401 ).json({ status: 401, message: "La contraseña es incorrecta" });
             const userLogged = req.cookies[ process.env.COOKIE_NAME ];
             if ( userLogged ) return res.status( 200 ).send({ message: "Ese usuario ya está logeado" });
-            const token = jwt.sign({ email: users[0].email, first_name: users[0].first_name, last_name: users[0].last_name, category: users[0].category, role: users[0].role, id: users[0]._id.toString() }, process.env.COOKIE_KEY, { expiresIn: "1h" });
-            res.cookie( process.env.COOKIE_NAME, token, { maxAge: 3600000, httpOnly: true, secure: true, sameSite: "strict", path: "/" });
+            const token = jwt.sign({ email: users[0].email.toLowerCase(), first_name: users[0].first_name.toLowerCase(), last_name: users[0].last_name.toLowerCase(), category: users[0].category.toLowerCase(), role: users[0].role.toLowerCase(), id: users[0]._id.toString() }, process.env.COOKIE_KEY, { expiresIn: "1h" });
+            console.log(users[0].email.toLowerCase())
+            res.cookie( process.env.COOKIE_NAME, token, { maxAge: 3600000, httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "none", path: "/" });
             await sessionDao.createSession( users[0]._id, token );
             return res.status( 200 ).json({ message: "Login realizado con éxito", token });
         } catch ( error ) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
+            res.status( 500 ).json({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
     };
 
-    logoutUser = async( req, res ) => {
+    logoutUser = async (req, res) => {
         try {
             const token = req.cookies[process.env.COOKIE_NAME];
-            if( !token ) return res.status( 401 ).send({ message: "Token no encontrado, sesión cerrada" });
-            res.clearCookie( process.env.COOKIE_NAME, { httpOnly: true, secure: true, sameSite: "strict", path: "/" });
-            await sessionDao.deleteSession( token );
-            return res.status( 200 ).send({ message: "Logout realizado con exito" });
-        } catch ( error ) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
+            if (!token) return res.status(401).send({ message: "Token no encontrado, sesión cerrada" });
+            res.clearCookie(process.env.COOKIE_NAME, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "none", path: "/" });
+            await sessionDao.deleteSession(token);
+            return res.status(200).json({ message: "Logout realizado con éxito" });
+        } catch (error) {
+            res.status(500).json({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
-    };
+    };    
 
     updateUserById = async (req, res) => {
         try {

@@ -12,7 +12,7 @@ ROUTER.get("/", userController.getUsers);
 ROUTER.delete("/logout", userController.logoutUser);
 ROUTER.post("/register", userController.registerUser);
 ROUTER.post("/login", userController.loginUser);
-ROUTER.get("/:id", userController.getUserById);
+ROUTER.get("/id", permissions, justChief, userController.getUserById);
 ROUTER.patch("/:id", uploadProfile.single("image"), userController.updateUserById);
 ROUTER.delete("/:id", userController.deleteUserById);
 ROUTER.put("/role/:id", userController.updateRoleById);
