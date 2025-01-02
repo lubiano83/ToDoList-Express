@@ -25,7 +25,7 @@ export default class UserController {
         try {
             const { id } = req.user;
             const user = await userDao.getUserById( id );
-            if( !user ) return res.status( 404 ).send({ message: "Ese usuario no existe" });
+            if( !user ) return res.status( 404 ).json({ message: "Ese usuario no existe" });
             return await res.status( 200 ).json({ message: "Un usuario por el id", payload: user });
         } catch ( error ) {
             res.status( 500 ).json({ message: "Error al obtener datos desde el servidor", error: error.message });
@@ -80,38 +80,41 @@ export default class UserController {
 
     updateUserById = async (req, res) => {
         try {
-            const { first_name, last_name } = req.body;
-            const { id } = req.params;
-            const { filename } = req.file;
-            if (!filename) return res.status(400).json({ message: "No se subió ninguna imagen" });
-            const originalImagePath = path.join(process.cwd(), "src/public/profile", filename);
-            const isWebp = path.extname(filename).toLowerCase() === ".webp";
-            let webpFileName = filename;
-            let webpImagePath = originalImagePath;
-            if (!isWebp) {
-                webpFileName = `${path.parse(filename).name}.webp`;
-                webpImagePath = path.join(process.cwd(), "src/public/profile", webpFileName);
-                await sharp(originalImagePath).webp({ quality: 80 }).toFile(webpImagePath);
-                fs.unlinkSync(originalImagePath);
-            }
-            const newImagePath = `/profile/${webpFileName}`;
-            const updateData = { first_name, last_name, image: newImagePath };
+            const { first_name, last_name } = req.body; // Datos enviados en la solicitud
+            const { id } = req.user; // ID del usuario autenticado
+            const filename = req.file?.filename; // Nombre del archivo si se subió una imagen
             const user = await userDao.getUserById(id);
             if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
-            if (user.image) {
-                const oldImagePath = path.join(process.cwd(), "src/public", user.image);
-                if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
-                } else {
-                    console.log("La imagen anterior no existe:", oldImagePath);
+            const updateData = {};
+            if (first_name) updateData.first_name = first_name.toLowerCase();
+            if (last_name) updateData.last_name = last_name.toLowerCase();
+            if (filename) {
+                const originalImagePath = path.join(process.cwd(), "src/public/profile", filename);
+                const isWebp = path.extname(filename).toLowerCase() === ".webp";
+                let webpFileName = filename;
+                let webpImagePath = originalImagePath;
+                if (!isWebp) {
+                    webpFileName = `${path.parse(filename).name}.webp`;
+                    webpImagePath = path.join(process.cwd(), "src/public/profile", webpFileName);
+                    await sharp(originalImagePath).webp({ quality: 80 }).toFile(webpImagePath);
+                    fs.unlinkSync(originalImagePath);
                 }
+                updateData.image = `/profile/${webpFileName}`;
+                if (user.image) {
+                    const oldImagePath = path.join(process.cwd(), "src/public", user.image);
+                    if (fs.existsSync(oldImagePath)) {
+                        fs.unlinkSync(oldImagePath);
+                    }
+                }
+            } else {
+                updateData.image = user.image;
             }
             const payload = await userDao.updateUserById(id, updateData);
             return res.status(200).json({ message: "Usuario actualizado con éxito", payload });
         } catch (error) {
             return res.status(500).json({ message: "Error interno del servidor", error: error.message });
         }
-    };
+    };    
 
     deleteUserById = async(req, res) => {
         try {
