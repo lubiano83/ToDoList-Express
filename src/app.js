@@ -25,8 +25,11 @@ APP.use(cookieParser());
 APP.use(passport.initialize());
 initializePassport();
 
-// Rutas Estaticas
-APP.use("/public/profile", express.static(path.join(__dirname, "public/profile")));
+// Servir imágenes desde la carpeta public
+APP.use("/", express.static(path.join(process.cwd(), "src/public")));
+
+// Servir imágenes personalizadas desde la carpeta public/profile
+APP.use("/profile", express.static(path.join(process.cwd(), "src/public/profile")));
 
 // Configuración de CORS
 APP.use(cors({
