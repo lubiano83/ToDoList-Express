@@ -25,13 +25,8 @@ export default class UserController {
             const { id } = req.user;
             const user = await userDao.getUserById(id);
             if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
-    
-            // Construir la URL base
             const baseUrl = `${req.protocol}://${req.get("host")}`;
-    
-            // Convertir la ruta relativa de la imagen en una URL completa
             user.image = `${baseUrl}${user.image}`;
-    
             return res.status(200).json({ message: "Un usuario por el id", payload: user });
         } catch (error) {
             res.status(500).json({ message: "Error al obtener datos desde el servidor", error: error.message });
@@ -41,36 +36,19 @@ export default class UserController {
     registerUser = async (req, res) => {
         try {
             const { first_name, last_name, email, password } = req.body;
-    
-            if (!first_name || !last_name || !email || !password) {
-                return res.status(400).json({ message: "Todos los campos son obligatorios" });
-            }
-    
-            // Verificar si el email ya está registrado
+            if (!first_name || !last_name || !email || !password) return res.status(400).json({ message: "Todos los campos son obligatorios" });
             const existingUser = await userDao.getUserByProperty({ email: email.toLowerCase() });
-            if (existingUser.length > 0) {
-                return res.status(409).json({ message: "Ese email ya está registrado" });
-            }
-    
-            // Validar longitud de la contraseña
-            if (password.length < 6 || password.length > 8) {
-                return res.status(400).json({ message: "La contraseña debe tener entre 6 y 8 caracteres" });
-            }
-    
-            // Usar la ruta relativa de la imagen por defecto
+            if (existingUser.length > 0) return res.status(409).json({ message: "Ese email ya está registrado" });
+            if (password.length < 6 || password.length > 8) return res.status(400).json({ message: "La contraseña debe tener entre 6 y 8 caracteres" });
             const defaultImage = "/profile-circle-svgrepo-com.webp";
-    
-            // Crear el usuario
             const newUser = {
                 first_name: first_name.toLowerCase(),
                 last_name: last_name.toLowerCase(),
                 email: email.toLowerCase(),
                 password: await createHash(password),
-                image: defaultImage, // Almacena la ruta relativa
+                image: defaultImage,
             };
-    
             const payload = await userDao.createUser(newUser);
-    
             return res.status(200).json({ message: "Usuario registrado exitosamente", payload });
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
@@ -111,33 +89,31 @@ export default class UserController {
 
     updateUserById = async (req, res) => {
         try {
-            const { first_name, last_name } = req.body; // Datos enviados
-            const { id } = req.user; // ID del usuario autenticado
-            const filename = req.file?.filename; // Archivo subido
-    
+            const { first_name, last_name } = req.body;
+            const { id } = req.user;
+            const filename = req.file?.filename;
             const user = await userDao.getUserById(id);
             if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
-    
             const updateData = {};
-    
             if (first_name) updateData.first_name = first_name.toLowerCase();
             if (last_name) updateData.last_name = last_name.toLowerCase();
-    
             if (filename) {
-                // Guardar la ruta relativa correcta en la base de datos
                 updateData.image = `/profile/${filename}`;
-    
-                // Eliminar la imagen anterior si no es la imagen por defecto
                 if (user.image && user.image !== "/profile-circle-svgrepo-com.webp") {
                     const oldImagePath = path.join(process.cwd(), "src/public", user.image);
-                    if (fs.existsSync(oldImagePath)) {
-                        fs.unlinkSync(oldImagePath);
-                    }
+                    if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
                 }
             }
-    
-            const payload = await userDao.updateUserById(id, updateData);
-            return res.status(200).json({ message: "Usuario actualizado con éxito", payload });
+            const updatedUser = await userDao.updateUserById(id, updateData);
+            const baseUrl = `${req.protocol}://${req.get("host")}`;
+            const fullImageUrl = updatedUser.image ? `${baseUrl}${updatedUser.image}` : null;
+            return res.status(200).json({
+                message: "Usuario actualizado con éxito",
+                payload: {
+                    ...updatedUser.toObject(),
+                    image: fullImageUrl,
+                },
+            });
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
         }
