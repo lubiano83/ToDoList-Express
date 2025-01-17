@@ -7,8 +7,8 @@ const ROUTER = Router();
 const todoController = new TodoController();
 const permissions = passport.authenticate("current", { session: false });
 
-ROUTER.get("/", todoController.getTodos);
-ROUTER.post("/", todoController.createTodo);
+ROUTER.get("/", permissions, justChief, todoController.getTodos);
+ROUTER.post("/", permissions, justChief, todoController.createTodo);
 ROUTER.get("/:id", todoController.getTodoById);
 ROUTER.patch("/:id", todoController.updateTodoById);
 ROUTER.delete("/:id", todoController.deleteTodoById);

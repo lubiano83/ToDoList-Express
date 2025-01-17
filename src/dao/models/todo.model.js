@@ -38,7 +38,12 @@ const todoSchema = new mongoose.Schema({
     createdAt: {
         type: String,
         default: moment().format("DD/MM/YYYY")
-    }
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "users",
+        required: true, // Asegúrate de que sea requerido si siempre debe estar presente
+    },
 });
 
 

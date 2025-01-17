@@ -7,9 +7,11 @@ export default class TdoController {
 
     getTodos = async( req, res ) => {
         try {
+            const userId = req.user.id
             const paramFilters = req.query;
             const todos = await todoDao.getTodos( paramFilters );
-            return res.status( 200 ).send({ message: "Todos las tareas", payload: todos });
+            const todosByUser = todos.docs.filter(todo => todo.createdBy.toString() === userId);
+            return res.status( 200 ).send({ message: "Todos las tareas", payload: todosByUser });
         } catch ( error ) {
             res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
@@ -29,13 +31,15 @@ export default class TdoController {
     createTodo = async (req, res) => {
         try {
             const { title, category, dueDate } = req.body;
+            const userId = req.user.id;
+            console.log("id de session:", userId);
             if ( !title || !category || !dueDate ) return res.status(400).send({ message: "Todos los campos son obligatorios" });
             const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
             if (!dateRegex.test(dueDate)) return res.status(400).send({ message: "El formato de la fecha debe ser DD/MM/YYYY" });
             const todo = await todoDao.getTodoByProperty({ title, category });
             if ( todo.length > 0 ) return res.status(409).send({ message: "Ese título y categoría ya existen." });
             const formattedDueDate = moment(dueDate, "DD/MM/YYYY").format("DD/MM/YYYY");
-            const payload = await todoDao.createTodo({ title: title.toLowerCase(), category: category.toLowerCase(), dueDate: formattedDueDate });
+            const payload = await todoDao.createTodo({ title: title.toLowerCase(), category: category.toLowerCase(), dueDate: formattedDueDate, createdBy: userId });
             return res.status( 201 ).send({ message: "Tarea creada exitosamente.", payload });
         } catch (error) {
             return res.status( 500 ).send({ message: "Error al procesar la solicitud.", error: error.message });

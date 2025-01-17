@@ -66,7 +66,6 @@ export default class UserController {
             const userLogged = req.cookies[ process.env.COOKIE_NAME ];
             if ( userLogged ) return res.status( 200 ).send({ message: "Ese usuario ya está logeado" });
             const token = jwt.sign({ email: users[0].email.toLowerCase(), first_name: users[0].first_name.toLowerCase(), last_name: users[0].last_name.toLowerCase(), category: users[0].category.toLowerCase(), role: users[0].role.toLowerCase(), id: users[0]._id.toString() }, process.env.COOKIE_KEY, { expiresIn: "1h" });
-            console.log(users[0].email.toLowerCase())
             res.cookie( process.env.COOKIE_NAME, token, { maxAge: 3600000, httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "none", path: "/" });
             await sessionDao.createSession( users[0]._id, token );
             return res.status( 200 ).json({ message: "Login realizado con éxito", token });
