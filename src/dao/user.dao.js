@@ -16,9 +16,9 @@ export default class UserDao {
             const filters = $and.length > 0 ? { $and } : {};
             let sort = {};
             if (paramFilters.sort && paramFilters.sort === "asc") {
-                sort.updatedAt = 1;
+                sort.createdAt = 1;
             } else if (paramFilters.sort && paramFilters.sort === "desc") {
-                sort.updatedAt = -1;
+                sort.createdAt = -1;
             }
             const limit = paramFilters.limit ? parseInt(paramFilters.limit) : 10;
             const page = paramFilters.page ? parseInt(paramFilters.page) : 1;

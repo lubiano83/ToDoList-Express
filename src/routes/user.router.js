@@ -12,10 +12,16 @@ ROUTER.get("/", userController.getUsers);
 ROUTER.delete("/logout", userController.logoutUser);
 ROUTER.post("/register", userController.registerUser);
 ROUTER.post("/login", userController.loginUser);
-ROUTER.get("/id", permissions, justChief, userController.getUserById);
+ROUTER.get("/id", permissions, justSlave, userController.getUserById);
 ROUTER.patch("/id", permissions, justChief, uploadProfile.single("image"), userController.updateUserById);
 ROUTER.delete("/:id", userController.deleteUserById);
 ROUTER.put("/role/:id", userController.updateRoleById);
 ROUTER.put("/category/:id", userController.updateCategoryById);
+ROUTER.post("/add/:email", permissions, justChief, userController.addUserToTeam);
+ROUTER.delete("/remove/:email", permissions, justChief, userController.removeUserFromTeam);
+ROUTER.delete("/leave/:id", permissions, justSlave, userController.leaveTheTeam);
+ROUTER.post("/invitation/", permissions, userController.acceptInvitation);
+ROUTER.delete("/invitation/", permissions, userController.acceptInvitation);
+
 
 export default ROUTER;

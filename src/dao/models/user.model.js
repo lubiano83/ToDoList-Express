@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema({
         type: Array,
         default: []
     },
+    invitations: {
+        type: Array,
+        default: []
+    },
     todos: {
         type: Array,
         default: []

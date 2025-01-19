@@ -4,6 +4,7 @@ import { createHash, isValidPassword } from "../utils/bcrypt.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
+import moment from "moment"
 
 const userDao = new UserDao();
 const sessionDao = new SessionDao();
@@ -192,4 +193,101 @@ export default class UserController {
             res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
         }
     };
+
+    removeUserFromTeam = async (req, res) => {
+        try {
+            const { email } = req.params;
+            const id = req.user.id;
+            const deletedUser = await userDao.getUserByProperty({ email: email.toLowerCase() });
+            const loggedUser = await userDao.getUserById(id);
+            if (!loggedUser) return res.status(404).json({ message: "Usuario logueado no encontrado" });
+            const userInTeam = loggedUser.team.find(item => item.toString() === deletedUser[0]._id.toString());
+            if(!userInTeam) return res.status(404).send({ message: "Ese usuario no pertenece a tu equipo.." })
+            const updatedTeam = loggedUser.team.filter((id) => id.toString() !== deletedUser[0]._id.toString());
+            const updatedLoggedUser = await userDao.updateUserById(loggedUser._id, { team: updatedTeam });
+            await userDao.updateUserById( deletedUser[0]._id, { role: "chief" });
+            return res.status(200).json({ message: "Usuario removido del equipo con éxito" });
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor", error: error.message });
+        }
+    };
+
+    leaveTheTeam = async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const { id } = req.params;
+            const teamLeader = await userDao.getUserById(id);
+            if(!teamLeader) return res.status(404).send({ message: "Ese usuario no existe" })
+            const user = await userDao.getUserById(userId);
+            if (!user) return res.status(404).send({ message: "Usuario no encontrado" });
+            const isMemberOfTeam = teamLeader.team.find(item => item.toString() === user._id.toString());
+            if (!isMemberOfTeam) return res.status(400).json({ message: "No perteneces a este equipo" });
+            const updatedTeamLeader = await userDao.updateUserById(teamLeader._id, { team: teamLeader.team.filter(memberId => memberId.toString() !== userId) });
+            const updatedUser = await userDao.updateUserById(userId, { teamId: null, role: "chief" });
+            return res.status(200).json({ message: "Has dejado el equipo con éxito", payload: updatedUser });
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor", error: error.message });
+        }
+    };    
+
+    addUserToTeam = async (req, res) => {
+        try {
+            const { email } = req.params;
+            const id = req.user.id;
+            const loggedUser = await userDao.getUserById(id);
+            if (!loggedUser) return res.status(404).json({ message: "Usuario logueado no encontrado" });
+            const invitedUser = await userDao.getUserByProperty({ email: email.toLowerCase() });
+            if (!invitedUser || invitedUser.length === 0) return res.status(404).json({ message: "El usuario con ese email no existe" });
+            const invitedUserData = invitedUser[0];
+            if(id === invitedUserData._id.toString()) return res.status(200).send({ message: "No te puedes invitar a ti.." })
+            if (invitedUserData.invitations.find(invite => invite.teamId.toString() === loggedUser._id.toString())) return res.status(400).json({ message: "Ya existe una invitación pendiente para este usuario" });
+            const newInvitation = {
+                teamId: loggedUser._id,
+                teamName: `${loggedUser.first_name} ${loggedUser.last_name}`,
+                date: moment().format("DD/MM/YYYY"),
+            };
+            const updatedInvitedUser = await userDao.updateUserById(invitedUserData._id, { invitations: [...invitedUserData.invitations, newInvitation] });
+            return res.status(200).json({ message: `Invitación enviada a ${email} con éxito`, payload: updatedInvitedUser });
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor", error: error.message });
+        }
+    };
+
+    acceptInvitation = async (req, res) => {
+        try {
+            const { teamId } = req.body;
+            const userId = req.user.id;
+            const user = await userDao.getUserById(userId);
+            if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+            const invitation = user.invitations.find(invite => invite.teamId.toString() === teamId);
+            if (!invitation) return res.status(404).json({ message: "Invitación no encontrada" });
+            const teamLeader = await userDao.getUserById(teamId);
+            if (!teamLeader) return res.status(404).json({ message: "El equipo no existe" });
+            const updatedTeamLeader = await userDao.updateUserById(teamLeader._id, { team: [...teamLeader.team, user._id] });
+            const updatedUser = await userDao.updateUserById(user._id, {
+                invitations: user.invitations.filter(invite => invite.teamId.toString() !== teamId),
+                role: "slave",
+            });
+            return res.status(200).json({ message: "Invitación aceptada con éxito", payload: updatedUser });
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor", error: error.message });
+        }
+    };
+    
+    rejectInvitation = async (req, res) => {
+        try {
+            const { teamId } = req.body;
+            const userId = req.user.id;
+            const user = await userDao.getUserById(userId);
+            if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+            const invitationExists = user.invitations.find(invite => invite.teamId === teamId);
+            if (!invitationExists) return res.status(404).json({ message: "Invitación no encontrada" });
+            const updatedUser = await userDao.updateUserById(user._id, {
+                invitations: user.invitations.filter(invite => invite.teamId !== teamId),
+            });
+            return res.status(200).json({ message: "Invitación rechazada con éxito", payload: updatedUser });
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor", error: error.message });
+        }
+    };    
 };
