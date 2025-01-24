@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema({
         enum: [ "slave", "boss", "chief" ],
         default: "chief"
     },
+    company: {
+        type: Object,
+        default: ""
+    },
     team: {
         type: Array,
         default: []

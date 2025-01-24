@@ -7,7 +7,7 @@ export default class TdoController {
 
     getTodos = async( req, res ) => {
         try {
-            const userId = req.user.id
+            const userId = req.user?.id
             const paramFilters = req.query;
             const todos = await todoDao.getTodos( paramFilters );
             const todosByUser = todos.docs.filter(todo => todo.createdBy.toString() === userId);
