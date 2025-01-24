@@ -1,7 +1,9 @@
 import TodoDao from "../dao/todo.dao.js";
+import UserDao from "../dao/user.dao.js";
 import moment from "moment";
 
 const todoDao = new TodoDao();
+const userDao = new UserDao();
 
 export default class TdoController {
 
@@ -9,9 +11,11 @@ export default class TdoController {
         try {
             const userId = req.user?.id
             const paramFilters = req.query;
+            const user = await userDao.getUserById(userId);
             const todos = await todoDao.getTodos( paramFilters );
+            const teamMember = todos.docs.filter(item => item.createdBy.toString() === user.company.companyId?.toString());
             const todosByUser = todos.docs.filter(todo => todo.createdBy.toString() === userId);
-            return res.status( 200 ).send({ message: "Todos las tareas", payload: todosByUser });
+            return res.status( 200 ).send({ message: "Todos las tareas", payload: teamMember.length > 0 ? teamMember : todosByUser });
         } catch ( error ) {
             res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
