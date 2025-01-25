@@ -7,19 +7,24 @@ const userDao = new UserDao();
 
 export default class TdoController {
 
-    getTodos = async( req, res ) => {
+    getTodos = async (req, res) => {
         try {
-            const userId = req.user?.id
+            const userId = req.user?.id;
             const paramFilters = req.query;
             const user = await userDao.getUserById(userId);
-            const todos = await todoDao.getTodos( paramFilters );
-            const teamMember = todos.docs.filter(item => item.createdBy.toString() === user.company.companyId?.toString());
-            const todosByUser = todos.docs.filter(todo => todo.createdBy.toString() === userId);
-            return res.status( 200 ).send({ message: "Todos las tareas", payload: teamMember.length > 0 ? teamMember : todosByUser });
-        } catch ( error ) {
-            res.status( 500 ).send({ message: "Error al obtener datos desde el servidor", error: error.message });
+            const todos = await todoDao.getTodos(paramFilters);
+            const companyId = user.company?.companyId?.toString();
+            const companyTodos = todos.docs.filter( todo => todo.createdBy.toString() === companyId );
+            const teamIds = user.team.map(member => member.id.toString());
+            const teamTodos = todos.docs.filter(todo => teamIds.includes(todo.createdBy.toString()));
+            const userTodos = todos.docs.filter(todo => todo.createdBy.toString() === userId );
+            const allTodos = [...companyTodos, ...teamTodos, ...userTodos];
+            return res.status(200).send({ message: "Todas las tareas", payload: allTodos });
+        } catch (error) {
+            res.status(500).send({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
     };
+    
 
     getTodoById = async( req, res ) => {
         try {
