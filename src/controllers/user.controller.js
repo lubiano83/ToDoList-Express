@@ -27,6 +27,10 @@ export default class UserController {
             if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
             const baseUrl = `${req.protocol}://${req.get("host")}`;
             user.image = `${baseUrl}${user.image}`;
+            user.team = user.team.map(member => ({
+                ...member,
+                image: `${baseUrl}${member.image}`
+            }));
             return res.status(200).json({ message: "Un usuario por el id", payload: user });
         } catch (error) {
             res.status(500).json({ message: "Error al obtener datos desde el servidor", error: error.message });
@@ -90,10 +94,10 @@ export default class UserController {
         try {
             const { first_name, last_name } = req.body;
             const id = req.user.id;
-            console.log("Hola")
             const filename = req.file?.filename;
             const user = await userDao.getUserById(id);
             if (!user) return res.status(404).json({ message: "Ese usuario no existe" });
+            const baseUrl = `${req.protocol}://${req.get("host")}`;
             const updateData = {};
             if (first_name) updateData.first_name = first_name.toLowerCase();
             if (last_name) updateData.last_name = last_name.toLowerCase();
@@ -105,15 +109,17 @@ export default class UserController {
                 }
             }
             const updatedUser = await userDao.updateUserById(id, updateData);
-            const baseUrl = `${req.protocol}://${req.get("host")}`;
+            if (filename) {
+                const allUsers = await userDao.getUsers();
+                for (const otherUser of allUsers.docs) {
+                    const updatedTeam = otherUser.team.map(member => 
+                        member.id.toString() === id ? { ...member, image: `/profile/${filename}` } : member
+                    );
+                    await userDao.updateUserById(otherUser._id, { team: updatedTeam });
+                }
+            }
             const fullImageUrl = updatedUser.image ? `${baseUrl}${updatedUser.image}` : null;
-            return res.status(200).json({
-                message: "Usuario actualizado con éxito",
-                payload: {
-                    ...updatedUser.toObject(),
-                    image: fullImageUrl,
-                },
-            });
+            return res.status(200).json({ message: "Usuario actualizado con éxito", payload: { ...updatedUser.toObject(), image: fullImageUrl }});
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
         }

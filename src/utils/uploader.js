@@ -19,10 +19,12 @@ const uploadProfile = multer({ storage: profileStorage });
 
 // Middleware para convertir imágenes a .webp
 const convertToWebp = async (req, res, next) => {
-  if (!req.file) return next(); // Si no hay imagen, continuar con la siguiente función
+  if (!req.file) return next(); // Si no hay imagen, continuar
 
   const inputPath = req.file.path; // Ruta original de la imagen
-  const outputPath = inputPath.replace(/\.\w+$/, ".webp"); // Cambia la extensión a .webp
+  const uploadDir = path.dirname(inputPath); // Directorio donde se guardará la imagen
+  const outputFilename = `${Date.now()}-converted.webp`; // Nombre único para la imagen .webp
+  const outputPath = path.join(uploadDir, outputFilename); // Nueva ruta de salida
 
   try {
     await sharp(inputPath)
@@ -32,7 +34,7 @@ const convertToWebp = async (req, res, next) => {
     fs.unlinkSync(inputPath); // Elimina la imagen original
 
     // Actualiza el nombre del archivo en `req.file`
-    req.file.filename = path.basename(outputPath);
+    req.file.filename = outputFilename;
     req.file.path = outputPath;
 
     next();

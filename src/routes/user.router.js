@@ -13,7 +13,7 @@ ROUTER.delete("/logout", userController.logoutUser);
 ROUTER.post("/register", userController.registerUser);
 ROUTER.post("/login", userController.loginUser);
 ROUTER.get("/id", permissions, justSlave, userController.getUserById);
-ROUTER.patch("/id", permissions, justChief, uploadProfile.single("image"), convertToWebp, userController.updateUserById);
+ROUTER.patch("/id", permissions, justSlave, uploadProfile.single("image"), convertToWebp, userController.updateUserById);
 ROUTER.delete("/:id", userController.deleteUserById);
 
 export default ROUTER;

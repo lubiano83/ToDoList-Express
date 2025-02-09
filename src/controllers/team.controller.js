@@ -97,17 +97,21 @@ export default class TeamController {
             if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
             const invitation = user.invitations.find(item => item.teamId.toString() === id);
             if (!invitation) return res.status(404).json({ message: "Invitación no encontrada" });
-            const teamLeader = await userDao.getUserById(id);
-            const userCompany = {
-                companyId: teamLeader._id,
-                companyName: `${teamLeader.first_name} ${teamLeader.last_name}`,
-                companyEmail: teamLeader.email,
-                date: moment().format("DD/MM/YYYY"),
-            };
-            if (!teamLeader) return res.status(404).json({ message: "El equipo no existe" });
-            await userDao.updateUserById(teamLeader._id, { team: [ ...teamLeader.team, { id: user._id, image: user.image } ]});
-            const updatedUser = await userDao.updateUserById(user._id, { invitations: user.invitations.filter(invite => invite.teamId.toString() !== id), role: "slave", company: userCompany });
-            return res.status(200).json({ message: "Invitación aceptada con éxito", payload: updatedUser });
+            if(user.team.length < 1) {
+                const teamLeader = await userDao.getUserById(id);
+                const userCompany = {
+                    companyId: teamLeader._id,
+                    companyName: `${teamLeader.first_name} ${teamLeader.last_name}`,
+                    companyEmail: teamLeader.email,
+                    date: moment().format("DD/MM/YYYY")
+                };
+                if (!teamLeader) return res.status(404).json({ message: "El equipo no existe" });
+                await userDao.updateUserById(teamLeader._id, { team: [ ...teamLeader.team, { id: user._id, image: user.image } ]});
+                const updatedUser = await userDao.updateUserById(user._id, { invitations: user.invitations.filter(invite => invite.teamId.toString() !== id), role: "slave", company: userCompany });
+                return res.status(200).json({ message: "Invitación aceptada con éxito", payload: updatedUser });
+            } else {
+                return res.status(404).send({ message: "Primero debes sacar a todos los miembros de tu equipo" });
+            }
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
         }
