@@ -7,8 +7,8 @@ const ROUTER = Router();
 const teamController = new TeamController();
 const permissions = passport.authenticate("current", { session: false });
 
-ROUTER.put("/role/:id", permissions, justChief, teamController.updateRoleById);
-ROUTER.put("/category/:id", teamController.updateCategoryById);
+ROUTER.put("/role", permissions, justChief, teamController.updateRoleById);
+ROUTER.put("/category", teamController.updateCategoryById);
 ROUTER.post("/add/:email", permissions, justChief, teamController.addUserToTeam);
 ROUTER.delete("/remove/:email", permissions, justChief, teamController.removeUserFromTeam);
 ROUTER.delete("/leave/:id", permissions, justSlave, teamController.leaveTheTeam);

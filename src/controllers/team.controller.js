@@ -6,12 +6,12 @@ const userDao = new UserDao();
 export default class TeamController {
     updateRoleById = async ( req, res ) => {
         try {
-            const { id } = req.params;
+            const { id } = req.body;
             let { role } = req.body;
             if ( Array.isArray(role )) role = role[0];
             const validRoles = ["slave", "boss", "chief"];
             if ( !role || typeof role !== "string" || !validRoles.includes( role )) return res.status( 400 ).json({ message: `El campo 'role' debe ser uno de los siguientes valores: ${validRoles.join( ", " )}` });
-            const payload = await userDao.updateUserById( id, { role });
+            const payload = await userDao.updateUserById({ id, role });
             return res.status( 200 ).json({ message: "Role actualizado con éxito", payload });
         } catch ( error ) {
             res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
@@ -20,9 +20,9 @@ export default class TeamController {
 
     updateCategoryById = async ( req, res ) => {
         try {
-            const { id } = req.params;
+            const { id } = req.body;
             let { category } = req.body;
-            const payload = await userDao.updateUserById( id, { category });
+            const payload = await userDao.updateUserById({ id, category });
             return res.status( 200 ).json({ message: "Categoria actualizada con éxito", payload });
         } catch ( error ) {
             res.status( 500 ).json({ message: "Error interno del servidor", error: error.message });
