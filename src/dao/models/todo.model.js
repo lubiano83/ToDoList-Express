@@ -33,23 +33,25 @@ const todoSchema = new mongoose.Schema({
         default: false
     },
     dueDate: {
-        type: String
+        type: Date,
+        get: (value) => value ? moment(value).format("DD/MM/YYYY") : null // Getter para formatear
     },
     createdAt: {
-        type: String,
-        default: moment().format("DD/MM/YYYY")
+        type: Date,
+        default: Date.now,
+        get: (value) => moment(value).format("DD/MM/YYYY") // Getter para formatear
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
-        required: true, // Asegúrate de que sea requerido si siempre debe estar presente
+        required: true,
     },
-});
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 
 todoSchema.pre("save", function (next) {
     if (this.dueDate) {
-        this.dueDate = moment(this.dueDate, "DD/MM/YYYY").format("DD/MM/YYYY");
+        this.dueDate = moment(this.dueDate, "DD/MM/YYYY").toDate();
     }
     next();
 });

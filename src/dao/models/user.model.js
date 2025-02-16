@@ -57,28 +57,26 @@ const userSchema = new mongoose.Schema({
         default: []
     },
     createdAt: {
-        type: String,
-        default: moment().format("DD/MM/YYYY")
+        type: Date,
+        default: Date.now,
+        get: (value) => moment(value).format("DD/MM/YYYY") // Getter para formatear
     },
     updatedAt: {
-        type: String,
-        default: moment().format("DD/MM/YYYY")
-    },
-    score: {
-        type: Number,
-        default: 0
+        type: Date,
+        default: Date.now,
+        get: (value) => moment(value).format("DD/MM/YYYY") // Getter para formatear
     }
-});
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 // Hook pre-save para formatear `updatedAt` antes de guardar
 userSchema.pre("save", function (next) {
-    this.updatedAt = moment().format("DD/MM/YYYY");
+    this.updatedAt = Date.now();
     next();
 });
 
 // Hook pre-update para formatear `updatedAt` antes de una actualización
 userSchema.pre("findOneAndUpdate", function (next) {
-    this._update.updatedAt = moment().format("DD/MM/YYYY");
+    this._update.updatedAt = Date.now();
     next();
 });
 
