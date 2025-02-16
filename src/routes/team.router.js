@@ -8,11 +8,11 @@ const teamController = new TeamController();
 const permissions = passport.authenticate("current", { session: false });
 
 ROUTER.put("/role", permissions, justChief, teamController.updateRoleById);
-ROUTER.put("/category", teamController.updateCategoryById);
-ROUTER.post("/add/:email", permissions, justChief, teamController.addUserToTeam);
-ROUTER.delete("/remove/:email", permissions, justChief, teamController.removeUserFromTeam);
-ROUTER.delete("/leave/:id", permissions, justSlave, teamController.leaveTheTeam);
-ROUTER.post("/invitation/:id", permissions, justChief, teamController.acceptInvitation);
-ROUTER.delete("/reject/:id", permissions, justChief, teamController.rejectInvitation);
+ROUTER.put("/category", permissions, justChief, teamController.updateCategoryById);
+ROUTER.post("/add", permissions, justBoss, teamController.addUserToTeam);
+ROUTER.delete("/remove", permissions, justChief, teamController.removeUserFromTeam);
+ROUTER.delete("/leave", permissions, justSlave, teamController.leaveTheTeam);
+ROUTER.post("/invitation", permissions, justChief, teamController.acceptInvitation);
+ROUTER.delete("/reject", permissions, justChief, teamController.rejectInvitation);
 
 export default ROUTER;
