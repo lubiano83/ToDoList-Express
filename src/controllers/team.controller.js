@@ -73,7 +73,7 @@ export default class TeamController {
             const invitedUserData = invitedUser[0];
             const usuarioEnEquipo = loggedUser.team.some(item => item.id.toString() === invitedUserData._id.toString());
             if(usuarioEnEquipo) return res.status(409).send({ message: "Este usuario ya pertenece a tu equipo.." });
-            if(id === invitedUserData._id.toString()) return res.status(200).send({ message: "No te puedes invitar a ti mismo.." })
+            if(id === invitedUserData._id.toString()) return res.status(200).send({ message: "No te puedes invitar a ti mismo.." });
             if (invitedUserData.invitations.find(invite => invite.teamId.toString() === loggedUser._id.toString())) return res.status(400).json({ message: "Ya existe una invitación pendiente para este usuario" });
             const newInvitation = {
                 teamId: loggedUser._id,

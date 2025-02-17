@@ -29,12 +29,15 @@ const todoSchema = new mongoose.Schema({
         default: 'low'
     },
     completed: {
-        type: Boolean,
-        default: false
+        type: String,
+        enum: ['false', 'inprogress', 'true'],
+        default: 'false'
     },
     dueDate: {
         type: Date,
-        get: (value) => value ? moment(value).format("DD/MM/YYYY") : null // Getter para formatear
+        set: (value) => moment(value, "DD/MM/YYYY", true).isValid() 
+            ? moment(value, "DD/MM/YYYY").toDate() 
+            : value // Guarda solo si es una fecha válida
     },
     createdAt: {
         type: Date,
@@ -46,7 +49,11 @@ const todoSchema = new mongoose.Schema({
         ref: "users",
         required: true,
     },
-}, { toJSON: { getters: true }, toObject: { getters: true } });
+    working: {
+        type: String,
+        default: ""
+    },
+}, { toJSON: { virtuals: false, versionKey: false }, toObject: { virtuals: false, versionKey: false }});
 
 
 todoSchema.pre("save", function (next) {
