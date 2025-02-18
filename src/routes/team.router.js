@@ -12,7 +12,7 @@ ROUTER.put("/category", permissions, justChief, teamController.updateCategoryByI
 ROUTER.post("/add", permissions, justBoss, teamController.addUserToTeam);
 ROUTER.delete("/remove", permissions, justChief, teamController.removeUserFromTeam);
 ROUTER.delete("/leave", permissions, justSlave, teamController.leaveTheTeam);
-ROUTER.post("/invitation", permissions, justChief, teamController.acceptInvitation);
+ROUTER.post("/invitation", permissions, justSlave, teamController.acceptInvitation);
 ROUTER.delete("/reject", permissions, justChief, teamController.rejectInvitation);
 
 export default ROUTER;

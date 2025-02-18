@@ -6,6 +6,7 @@ const todoDao = new TodoDao();
 const userDao = new UserDao();
 
 export default class TdoController {
+    #cuentaGratis = 20;
 
     getTodos = async (req, res) => {
         try {
@@ -35,16 +36,22 @@ export default class TdoController {
 
     createTodo = async (req, res) => {
         try {
-            const { title, category, dueDate } = req.body;
-            const userId = req.user.id;
-            if ( !title || !category || !dueDate ) return res.status(400).send({ message: "Todos los campos son obligatorios.." });
-            const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
-            if (!dateRegex.test(dueDate)) return res.status(400).send({ message: "El formato de la fecha debe ser DD/MM/YYYY" });
-            const todo = await todoDao.getTodoByProperty({ title, category });
-            if ( todo.length > 0 ) return res.status(409).send({ message: "Ese título y categoría ya existen.." });
-            const formattedDueDate = moment(dueDate, "DD/MM/YYYY").format("DD/MM/YYYY");
-            const payload = await todoDao.createTodo({ title: title.toLowerCase(), category: category.toLowerCase(), dueDate: formattedDueDate, createdBy: userId });
-            return res.status( 201 ).send({ message: "Tarea creada exitosamente", payload });
+            const todos = await todoDao.getTodos();
+            const numeroDeTodos = todos.docs.length
+            if(numeroDeTodos < this.#cuentaGratis) {
+                const { title, category, dueDate } = req.body;
+                const userId = req.user.id;
+                if ( !title || !category || !dueDate ) return res.status(400).send({ message: "Todos los campos son obligatorios.." });
+                const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+                if (!dateRegex.test(dueDate)) return res.status(400).send({ message: "El formato de la fecha debe ser DD/MM/YYYY" });
+                const todo = await todoDao.getTodoByProperty({ title, category });
+                if ( todo.length > 0 ) return res.status(409).send({ message: "Ese título y categoría ya existen.." });
+                const formattedDueDate = moment(dueDate, "DD/MM/YYYY").format("DD/MM/YYYY");
+                const payload = await todoDao.createTodo({ title: title.toLowerCase(), category: category.toLowerCase(), dueDate: formattedDueDate, createdBy: userId });
+                return res.status( 201 ).send({ message: "Tarea creada exitosamente", payload });
+            } else {
+                return res.status(403).send({ message: "Alcanzaste el numero maximo de tareas.." });
+            }
         } catch (error) {
             return res.status( 500 ).send({ message: "Error al procesar la solicitud.", error: error.message });
         }

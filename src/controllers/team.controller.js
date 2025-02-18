@@ -4,6 +4,8 @@ import moment from "moment";
 const userDao = new UserDao();
 
 export default class TeamController {
+    #cuentaGratis = 4;
+ 
     updateRoleById = async ( req, res ) => {
         try {
             let { id, role } = req.body;
@@ -67,22 +69,27 @@ export default class TeamController {
             const { email } = req.body;
             const id = req.user.id;
             const loggedUser = await userDao.getUserById(id);
-            if (!loggedUser) return res.status(404).json({ message: "Usuario logueado no encontrado" });
-            const invitedUser = await userDao.getUserByProperty({ email: email.toLowerCase() });
-            if (!invitedUser || invitedUser.length === 0) return res.status(404).json({ message: "El usuario con ese email no existe" });
-            const invitedUserData = invitedUser[0];
-            const usuarioEnEquipo = loggedUser.team.some(item => item.id.toString() === invitedUserData._id.toString());
-            if(usuarioEnEquipo) return res.status(409).send({ message: "Este usuario ya pertenece a tu equipo.." });
-            if(id === invitedUserData._id.toString()) return res.status(200).send({ message: "No te puedes invitar a ti mismo.." });
-            if (invitedUserData.invitations.find(invite => invite.teamId.toString() === loggedUser._id.toString())) return res.status(400).json({ message: "Ya existe una invitación pendiente para este usuario" });
-            const newInvitation = {
-                teamId: loggedUser._id,
-                teamName: `${loggedUser.first_name} ${loggedUser.last_name}`,
-                teamEmail: loggedUser.email,
-                date: moment().format("DD/MM/YYYY"),
-            };
-            await userDao.updateUserById(invitedUserData._id, { invitations: [...invitedUserData.invitations, newInvitation] });
-            return res.status(200).json({ message: `Invitación enviada a ${email} con éxito` });
+            const numeroMiembrosDelEquipo = loggedUser.team.length
+            if(numeroMiembrosDelEquipo < this.#cuentaGratis) {
+                if (!loggedUser) return res.status(404).json({ message: "Usuario logueado no encontrado" });
+                const invitedUser = await userDao.getUserByProperty({ email: email.toLowerCase() });
+                if (!invitedUser || invitedUser.length === 0) return res.status(404).json({ message: "El usuario con ese email no existe" });
+                const invitedUserData = invitedUser[0];
+                const usuarioEnEquipo = loggedUser.team.some(item => item.id.toString() === invitedUserData._id.toString());
+                if(usuarioEnEquipo) return res.status(409).send({ message: "Este usuario ya pertenece a tu equipo.." });
+                if(id === invitedUserData._id.toString()) return res.status(200).send({ message: "No te puedes invitar a ti mismo.." });
+                if (invitedUserData.invitations.find(invite => invite.teamId.toString() === loggedUser._id.toString())) return res.status(400).json({ message: "Ya existe una invitación pendiente para este usuario" });
+                const newInvitation = {
+                    teamId: loggedUser._id,
+                    teamName: `${loggedUser.first_name} ${loggedUser.last_name}`,
+                    teamEmail: loggedUser.email,
+                    date: moment().format("DD/MM/YYYY"),
+                };
+                await userDao.updateUserById(invitedUserData._id, { invitations: [...invitedUserData.invitations, newInvitation] });
+                return res.status(200).json({ message: `Invitación enviada a ${email} con éxito` });
+            } else {
+                return res.status(403).send({ message: "Alcanzaste el numero maximo de miembros del equipo.." });
+            }
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
         }
@@ -91,25 +98,31 @@ export default class TeamController {
     acceptInvitation = async (req, res) => {
         try {
             const { id } = req.body;
-            const userId = req.user.id;
-            const user = await userDao.getUserById(userId);
-            if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-            const invitation = user.invitations.find(item => item.teamId.toString() === id);
-            if (!invitation) return res.status(404).json({ message: "Invitación no encontrada" });
-            if(user.team.length < 1) {
-                const teamLeader = await userDao.getUserById(id);
-                const userCompany = {
-                    companyId: teamLeader._id,
-                    companyName: `${teamLeader.first_name} ${teamLeader.last_name}`,
-                    companyEmail: teamLeader.email,
-                    date: moment().format("DD/MM/YYYY")
-                };
-                if (!teamLeader) return res.status(404).json({ message: "El equipo no existe" });
-                await userDao.updateUserById(teamLeader._id, { team: [ ...teamLeader.team, { id: user._id, image: user.image } ]});
-                const updatedUser = await userDao.updateUserById(user._id, { invitations: user.invitations.filter(invite => invite.teamId.toString() !== id), role: "slave", company: userCompany });
-                return res.status(200).json({ message: "Invitación aceptada con éxito", payload: updatedUser });
+            const teamLider = await userDao.getUserById(id);
+            const numeroMiembrosDelEquipo = teamLider.team.length
+            if(numeroMiembrosDelEquipo < this.#cuentaGratis) {
+                const userId = req.user.id;
+                const user = await userDao.getUserById(userId);
+                if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+                const invitation = user.invitations.find(item => item.teamId.toString() === id);
+                if (!invitation) return res.status(404).json({ message: "Invitación no encontrada" });
+                if(user.team.length < 1) {
+                    const teamLeader = await userDao.getUserById(id);
+                    const userCompany = {
+                        companyId: teamLeader._id,
+                        companyName: `${teamLeader.first_name} ${teamLeader.last_name}`,
+                        companyEmail: teamLeader.email,
+                        date: moment().format("DD/MM/YYYY")
+                    };
+                    if (!teamLeader) return res.status(404).json({ message: "El equipo no existe" });
+                    await userDao.updateUserById(teamLeader._id, { team: [ ...teamLeader.team, { id: user._id, image: user.image } ]});
+                    const updatedUser = await userDao.updateUserById(user._id, { invitations: user.invitations.filter(invite => invite.teamId.toString() !== id), role: "slave", company: userCompany });
+                    return res.status(200).json({ message: "Invitación aceptada con éxito", payload: updatedUser });
+                } else {
+                    return res.status(404).send({ message: "Primero debes sacar a todos los miembros de tu equipo" });
+                }
             } else {
-                return res.status(404).send({ message: "Primero debes sacar a todos los miembros de tu equipo" });
+                return res.status(403).send({ message: "El team lider alcanzo el numero maximo de miembros en el equipo.." });
             }
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
