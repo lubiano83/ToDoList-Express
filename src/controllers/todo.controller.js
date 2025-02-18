@@ -12,19 +12,15 @@ export default class TdoController {
             const userId = req.user?.id;
             const paramFilters = req.query;
             const user = await userDao.getUserById(userId);
-            const todos = await todoDao.getTodos(paramFilters);
             const companyId = user.company?.companyId?.toString();
-            const companyTodos = todos.docs.filter( todo => todo.createdBy.toString() === companyId );
             const teamIds = user.team.map(member => member.id.toString());
-            const teamTodos = todos.docs.filter(todo => teamIds.includes(todo.createdBy.toString()));
-            const userTodos = todos.docs.filter(todo => todo.createdBy.toString() === userId );
-            const allTodos = [...companyTodos, ...teamTodos, ...userTodos];
-            return res.status(200).send({ message: "Todas las tareas", payload: allTodos });
+            const filters = { createdBy: { $in: [userId, companyId, ...teamIds] }};
+            const todos = await todoDao.getTodos({ ...paramFilters, ...filters });
+            return res.status(200).send({ message: "Todas las tareas", payload: todos.docs });
         } catch (error) {
             res.status(500).send({ message: "Error al obtener datos desde el servidor", error: error.message });
         }
-    };
-    
+    };    
 
     getTodoById = async( req, res ) => {
         try {
