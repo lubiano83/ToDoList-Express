@@ -4,7 +4,7 @@ import moment from "moment";
 const userDao = new UserDao();
 
 export default class TeamController {
-    #cuentaGratis = 4;
+    #freeAcount = 4;
  
     updateRoleById = async ( req, res ) => {
         try {
@@ -57,7 +57,7 @@ export default class TeamController {
             const isMemberOfTeam = teamLeader.team.find(item => item.id.toString() === user._id.toString());
             if (!isMemberOfTeam) return res.status(400).json({ message: "No perteneces a este equipo.." });
             await userDao.updateUserById(teamLeader._id, { team: teamLeader.team.filter(item => item.id.toString() !== userId) });
-            await userDao.updateUserById(userId, { role: "chief", company: ""});
+            await userDao.updateUserById(userId, { role: "chief", company: "", team: []});
             return res.status(200).json({ message: "Has dejado el equipo con éxito" });
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor", error: error.message });
@@ -70,7 +70,7 @@ export default class TeamController {
             const id = req.user.id;
             const loggedUser = await userDao.getUserById(id);
             const numeroMiembrosDelEquipo = loggedUser.team.length
-            if(numeroMiembrosDelEquipo < this.#cuentaGratis) {
+            if(numeroMiembrosDelEquipo < this.#freeAcount) {
                 if (!loggedUser) return res.status(404).json({ message: "Usuario logueado no encontrado" });
                 const invitedUser = await userDao.getUserByProperty({ email: email.toLowerCase() });
                 if (!invitedUser || invitedUser.length === 0) return res.status(404).json({ message: "El usuario con ese email no existe" });
@@ -100,7 +100,7 @@ export default class TeamController {
             const { id } = req.body;
             const teamLider = await userDao.getUserById(id);
             const numeroMiembrosDelEquipo = teamLider.team.length
-            if(numeroMiembrosDelEquipo < this.#cuentaGratis) {
+            if(numeroMiembrosDelEquipo < this.#freeAcount) {
                 const userId = req.user.id;
                 const user = await userDao.getUserById(userId);
                 if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
@@ -108,15 +108,16 @@ export default class TeamController {
                 if (!invitation) return res.status(404).json({ message: "Invitación no encontrada" });
                 if(user.team.length < 1) {
                     const teamLeader = await userDao.getUserById(id);
+                    if (!teamLeader) return res.status(404).json({ message: "El equipo no existe" });
+                    const baseUrl = `${req.protocol}://${req.get("host")}`;
                     const userCompany = {
                         companyId: teamLeader._id,
                         companyName: `${teamLeader.first_name} ${teamLeader.last_name}`,
                         companyEmail: teamLeader.email,
-                        date: moment().format("DD/MM/YYYY")
+                        date: moment().format("DD/MM/YYYY"),
                     };
-                    if (!teamLeader) return res.status(404).json({ message: "El equipo no existe" });
                     await userDao.updateUserById(teamLeader._id, { team: [ ...teamLeader.team, { id: user._id, image: user.image } ]});
-                    const updatedUser = await userDao.updateUserById(user._id, { invitations: user.invitations.filter(invite => invite.teamId.toString() !== id), role: "slave", company: userCompany });
+                    const updatedUser = await userDao.updateUserById(user._id, { invitations: user.invitations.filter(invite => invite.teamId.toString() !== id), role: "slave", company: userCompany, team: [ ...teamLeader.team, { id: user._id, image: user.image } ] });
                     return res.status(200).json({ message: "Invitación aceptada con éxito", payload: updatedUser });
                 } else {
                     return res.status(404).send({ message: "Primero debes sacar a todos los miembros de tu equipo" });
