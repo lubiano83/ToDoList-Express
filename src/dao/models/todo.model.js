@@ -30,7 +30,7 @@ const todoSchema = new mongoose.Schema({
     },
     completed: {
         type: String,
-        enum: ['false', 'inprogress', 'true'],
+        enum: ['false', 'inprogress', 'review', 'true'],
         default: 'false'
     },
     dueDate: {

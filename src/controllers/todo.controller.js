@@ -104,4 +104,13 @@ export default class TdoController {
             return res.status( 500 ).send({ message: "Error al procesar la solicitud.", error: error.message });
         }
     };
+
+    changeToCompleted = async(req, res) => {
+        try {
+            const { id } = req.params;
+            const todo = await todoDao.getTodoById(id);
+        } catch (error) {
+            
+        }
+    };
 };
